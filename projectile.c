@@ -5,7 +5,9 @@
 volatile int pixel_buffer_start; 
 int direction_position [2] = {0,0};
 int power_position[2] = {0,0};
-int toMove=0;
+int dart_position[2] = {0,0};
+int toMove=0; //tells you to move the power or direction bar
+int step = 0; //what part in the game are you (finding power, direction or shooting)
 
 //function prototypes to draw on VGA
 void clear_screen();
@@ -48,7 +50,13 @@ int main(void)
     power_position [0] = power_line + power_initial[0];
     power_position [1] = power_initial[1];
     int power_incy = 1;
-    //int projectile_line = 20;
+
+    //dart data
+    int dart_line = 10;
+    dart_position [0] = 40;
+    dart_position [1] = 150;
+    int dart_incx = 1;
+    int dart_incy = -1;
 
     
 
@@ -68,6 +76,8 @@ int main(void)
         draw_line(direction_initial[0], direction_initial[1], direction_position[0], direction_position[1], colourlist[0]);
         //power
         draw_line(power_initial[0], power_position [1], power_position[0], power_position[1], colourlist[1]);
+        //dart
+        draw_line(dart_position[0], dart_position[1], dart_position[0] + dart_line, dart_position[1], colourlist[2]);
         //delay
         wait();
         //delay();
@@ -79,8 +89,15 @@ int main(void)
         //check if any should be updated
         if (direction_position[0] == 5 || direction_position[0] == 105) position_incx = -position_incx;
         if (power_position[1] == 150 || power_position[1] == 100) power_incy = -power_incy;
-        if (toMove == 0) direction_position[0] += position_incx;
-        else if (toMove == 1) power_position[1] += power_incy;
+        if (dart_position[1] == 0 || dart_position[1] == 100) dart_incy = -dart_incy;
+        if (dart_position[0] == 20 || dart_position[0] == 309) dart_incx = -dart_incx;
+        
+        if (toMove == 0) direction_position[0] += position_incx; //changing direction
+        else if (toMove == 1) power_position[1] += power_incy; //changing power
+        else if (toMove ==2) { //sending projectile
+            dart_position[0] += dart_incx;
+            dart_position[1] +=dart_incy;
+        }
         
         pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
         
@@ -276,20 +293,25 @@ void pushbutton_ISR(void) {
     press = *(KEY_ptr + 3); // read the pushbutton interrupt register
     *(KEY_ptr + 3) = press; // Clear the interrupt
     if (press & 0x1) {
-        toMove = 0;// KEY0
-        HEX_bits = 0b00111111; 
+        toMove++;// KEY0
+        HEX_bits = 0b00111111;
+        step++; 
     }
     else if (press & 0x2) {
-        toMove = 1;// KEY1
+        toMove++;// KEY1
         HEX_bits = 0b00000110;
+        step++;
     }
     else {
         toMove = -1;
         HEX_bits = 0b1111111;
+        step = -1;
     }
+
     *HEX3_HEX0_ptr = HEX_bits;
     return;
 }
+
 
 
 
