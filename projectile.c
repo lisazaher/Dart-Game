@@ -6,8 +6,15 @@ volatile int pixel_buffer_start;
 int direction_position [2] = {0,0};
 int power_position[2] = {0,0};
 int dart_position[2] = {0,0};
-int toMove=0; //tells you to move the power or direction bar
-int step = 0; //what part in the game are you (finding power, direction or shooting)
+//step tells you what part in the game are you (finding power, direction or shooting)
+int step = -1;
+/*
+-1 = start of game, show the moving power and direction lines + the dart
+0 = key 2 or 3 has been pressed and user can start
+1 = direction has been chosen
+2 = power has been chosen and projecticle starts
+3 = dart has reached the dart board aka end of game
+*/
 
 //function prototypes to draw on VGA
 void clear_screen();
@@ -16,6 +23,7 @@ void plot_pixel(int x, int y, short int line_color);
 void wait();
 void swap(int * x, int * y);
 void delay();
+void reset_vector();
 
 
 //function prototypes to set up button interrupts
@@ -25,6 +33,20 @@ void config_KEYs(void);
 void enable_A9_interrupts(void);
 void pushbutton_ISR(void);
 void config_interrupt(int, int);
+
+void reset_vector(){
+    //60 is length of direction line
+    direction_position [0] = 270; //2*direction line + direction initial
+    direction_position [1] = 160; //direction initial - direction line
+
+    //30 is length of power line
+    power_position [0] = 60; //power line + power initial
+    power_position [1] = 150; //power initial
+
+    dart_position [0] = 40;
+    dart_position [1] = 150;
+
+} 
 
 int main(void)
 {
@@ -38,27 +60,19 @@ int main(void)
     int i;
 
     //direction data
-    int direction_line = 50; //length of line
-    const int direction_initial [2] = {5 + direction_line, 220}; //the point of rotation of line
-    direction_position [0] = 2*direction_line + 5;
-    direction_position [1] = direction_initial[1] - direction_line;
+    const int direction_initial [2] = {210, 220}; //the point of rotation of line
     int position_incx =1;
 
     //power data
-    int power_line = 20;
-    const int power_initial[2] = {10,150};
-    power_position [0] = power_line + power_initial[0];
-    power_position [1] = power_initial[1];
+    const int power_initial[2] = {30,150};
     int power_incy = 1;
 
     //dart data
     int dart_line = 10;
-    dart_position [0] = 40;
-    dart_position [1] = 150;
     int dart_incx = 1;
     int dart_incy = -1;
 
-    
+    reset_vector();
 
     *(pixel_ctrl_ptr + 1) = 0xC8000000; 
     wait();
@@ -72,12 +86,11 @@ int main(void)
     {
         /* Erase any boxes and lines that were drawn in the last iteration */
         clear_screen();
-        //direction
-        draw_line(direction_initial[0], direction_initial[1], direction_position[0], direction_position[1], colourlist[0]);
-        //power
-        draw_line(power_initial[0], power_position [1], power_position[0], power_position[1], colourlist[1]);
-        //dart
-        draw_line(dart_position[0], dart_position[1], dart_position[0] + dart_line, dart_position[1], colourlist[2]);
+        if (step<=1) {
+            draw_line(direction_initial[0], direction_initial[1], direction_position[0], direction_position[1], colourlist[0]);
+            draw_line(power_initial[0], power_position [1], power_position[0], power_position[1], colourlist[1]);
+        }
+        if (step>1) draw_line(dart_position[0], dart_position[1], dart_position[0] + dart_line, dart_position[1], colourlist[2]);
         //delay
         wait();
         //delay();
@@ -92,9 +105,9 @@ int main(void)
         if (dart_position[1] == 0 || dart_position[1] == 100) dart_incy = -dart_incy;
         if (dart_position[0] == 20 || dart_position[0] == 309) dart_incx = -dart_incx;
         
-        if (toMove == 0) direction_position[0] += position_incx; //changing direction
-        else if (toMove == 1) power_position[1] += power_incy; //changing power
-        else if (toMove ==2) { //sending projectile
+        if (step == 0) direction_position[0] += position_incx; //changing direction
+        else if (step == 1) power_position[1] += power_incy; //changing power
+        else if (step == 2) { //sending projectile
             dart_position[0] += dart_incx;
             dart_position[1] +=dart_incy;
         }
@@ -279,11 +292,6 @@ void config_interrupt(int N, int CPU_target) {
     * appropriate byte */
     *(char *)address = (char)CPU_target;
 }
-/********************************************************************
-* Pushbutton - Interrupt Service Routine
-*
-* This routine checks which KEY has been pressed. It writes to HEX0
-*******************************************************************/
 void pushbutton_ISR(void) {
     /* KEY base address */
     volatile int * KEY_ptr = (int *) 0xFF200050;
@@ -292,25 +300,28 @@ void pushbutton_ISR(void) {
     int press, HEX_bits;
     press = *(KEY_ptr + 3); // read the pushbutton interrupt register
     *(KEY_ptr + 3) = press; // Clear the interrupt
-    if (press & 0x1) {
-        toMove++;// KEY0
+    if (press & 0x1) { //key0
         HEX_bits = 0b00111111;
-        step++; 
+        step = 1; 
     }
-    else if (press & 0x2) {
-        toMove++;// KEY1
+    else if (press & 0x2) { //key1
         HEX_bits = 0b00000110;
-        step++;
+        step = 2 ;
     }
-    else {
-        toMove = -1;
+    else { //key 2 or 3
         HEX_bits = 0b1111111;
-        step = -1;
+        if (step = -1) {
+            step = 0; //to begin game
+            reset_vector();
+        }
+        else step = -1; //to reset
     }
 
     *HEX3_HEX0_ptr = HEX_bits;
     return;
 }
+
+
 
 
 
