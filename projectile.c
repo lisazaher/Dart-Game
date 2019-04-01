@@ -24,6 +24,7 @@ void wait();
 void swap(int * x, int * y);
 void delay();
 void reset_vector();
+void write_char(int x, int y, char c);
 
 
 //function prototypes to set up button interrupts
@@ -34,20 +35,6 @@ void enable_A9_interrupts(void);
 void pushbutton_ISR(void);
 void config_interrupt(int, int);
 
-void reset_vector(){
-    //60 is length of direction line
-    direction_position [0] = 270; //2*direction line + direction initial
-    direction_position [1] = 160; //direction initial - direction line
-
-    //30 is length of power line
-    power_position [0] = 60; //power line + power initial
-    power_position [1] = 150; //power initial
-
-    dart_position [0] = 40;
-    dart_position [1] = 150;
-
-} 
-
 int main(void)
 {
     disable_A9_interrupts(); // disable interrupts in the A9 processor
@@ -57,7 +44,6 @@ int main(void)
     enable_A9_interrupts(); // enable interrupts in the A9 processor
     volatile int * pixel_ctrl_ptr = (int *)0xFF203020;
     short int colourlist[] = {0xF800, 0x07E0, 0x001F, 0xFFE0, 0xF81F, 0x07FF};
-    int i;
 
     //direction data
     const int direction_initial [2] = {210, 220}; //the point of rotation of line
@@ -68,7 +54,6 @@ int main(void)
     int power_incy = 1;
 
     //dart data
-    int dart_line = 10;
     int dart_incx = 1;
     int dart_incy = -1;
 
@@ -90,7 +75,7 @@ int main(void)
             draw_line(direction_initial[0], direction_initial[1], direction_position[0], direction_position[1], colourlist[0]);
             draw_line(power_initial[0], power_position [1], power_position[0], power_position[1], colourlist[1]);
         }
-        if (step>1) draw_line(dart_position[0], dart_position[1], dart_position[0] + dart_line, dart_position[1], colourlist[2]);
+        if (step>1) draw_line(dart_position[0], dart_position[1], dart_position[0] + 10, dart_position[1], colourlist[2]);
         //delay
         wait();
         //delay();
@@ -145,9 +130,31 @@ void clear_screen() {
         for (y = 0; y < 240; y++)
             plot_pixel(x, y, 0x0000);  
 }
+
+void reset_vector(){
+    //60 is length of direction line
+    direction_position [0] = 270; //2*direction line + direction initial
+    direction_position [1] = 160; //direction initial - direction line
+
+    //30 is length of power line
+    power_position [0] = 60; //power line + power initial
+    power_position [1] = 150; //power initial
+
+    dart_position [0] = 40;
+    dart_position [1] = 150;
+
+} 
+
 void plot_pixel(int x, int y, short int line_color){
     *(short int *)(pixel_buffer_start + (y << 10) + (x << 1)) = line_color;
 }
+
+void write_char(int x, int y, char c) {
+  // VGA character buffer
+  volatile char * character_buffer = (char *) (0x09000000 + (y<<7) + x);
+  *character_buffer = c;
+}
+
 void draw_line(int x0, int y0, int x1, int y1, short int color) {
     int is_steep = 0; //initialize to false
     int abs_y = y1 - y0;
@@ -310,7 +317,7 @@ void pushbutton_ISR(void) {
     }
     else { //key 2 or 3
         HEX_bits = 0b1111111;
-        if (step = -1) {
+        if (step == -1) {
             step = 0; //to begin game
             reset_vector();
         }
@@ -320,6 +327,7 @@ void pushbutton_ISR(void) {
     *HEX3_HEX0_ptr = HEX_bits;
     return;
 }
+
 
 
 
