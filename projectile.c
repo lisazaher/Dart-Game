@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 //global variables
-volatile int pixel_buffer_start; 
+volatile int pixel_buffer_start;
 int direction_position [2] = {0,0};
 int power_position[2] = {0,0};
 int dart_position[2] = {0,0};
@@ -28,7 +28,6 @@ void delay();
 void reset_vector();
 void write_char(int x, int y, char c);
 
-
 //function prototypes to set up button interrupts
 void set_A9_IRQ_stack(void);
 void config_GIC(void);
@@ -36,7 +35,7 @@ void config_KEYs(void);
 void enable_A9_interrupts(void);
 void pushbutton_ISR(void);
 void config_interrupt(int, int);
-
+void disable_A9_interrupts(void);
 int main(void)
 {
     disable_A9_interrupts(); // disable interrupts in the A9 processor
@@ -61,13 +60,12 @@ int main(void)
 
     reset_vector();
 
-    *(pixel_ctrl_ptr + 1) = 0xC8000000; 
+    *(pixel_ctrl_ptr + 1) = 0xC8000000;
     wait();
     pixel_buffer_start = *pixel_ctrl_ptr;
-    clear_screen(); 
+    clear_screen();
     *(pixel_ctrl_ptr + 1) = 0xC0000000;
-    pixel_buffer_start = *(pixel_ctrl_ptr + 1); 
-
+    pixel_buffer_start = *(pixel_ctrl_ptr + 1);
 
     while (1)
     {
@@ -81,43 +79,45 @@ int main(void)
         }
         if (step==2) {
             draw_line(dart_position[0], dart_position[1], dart_position[0] + 10, dart_position[1], colourlist[2]);
-            if (dart_position[0] == 309 || dart_position[0] == 0 || dart_position[1] == 0 || dart_position[1] == 209) step = 3;
+            //plot_arc(1.5);
+            if (dart_position[0] == 229 || dart_position[0] == 0 || dart_position[1] == 0 || dart_position[1] == 209) step = 3;
         }
 
         if (step == 3) {
             plot_arc(1.5);
+            reset_vector();
         }
         //delay
         wait();
         //delay();
 
         //check if any should be updated
-        if (direction_position[0] == 150 || direction_position[0] == 270) position_incx = -position_incx;
-        if (power_position[1] == 150 || power_position[1] == 100) power_incy = -power_incy;
+        if (direction_position[0] == 149 || direction_position[0] == 271) position_incx = -position_incx;
+        if (power_position[1] == 151 || power_position[1] == 100) power_incy = -power_incy;
         
         if (step == 0) direction_position[0] += position_incx; //changing direction
         else if (step == 1) {
             power_position[1] += power_incy;
             dart_incx = 0;
-            dart_incy = 0; 
+            dart_incy = 0;
         }//changing power
         else if (step == 2) { //sending projectile
             dart_position[0] = dart_incx + 80;
-            dart_position[1] = dart_xy[dart_incx] - 120;
+            dart_position[1] = 120 - dart_xy[dart_incx];
+            
+            dart_incx++;
         }
         
         pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
         
     }
 
-
 }
-
 
 void swap(int * x, int * y){
     int temp = *x;
     *x = *y;
-    *y = temp;  
+    *y = temp;
 }
 
 void delay() {
@@ -133,13 +133,13 @@ void wait(){
     
     //exit when S is 1
     return;
-}   
+}
 void clear_screen() {
     int x;
     int y;
     for (x = 0; x < 320; x++)
         for (y = 0; y < 240; y++)
-            plot_pixel(x, y, 0x0000);  
+            plot_pixel(x, y, 0x0000);
 }
 
 void reset_vector(){
@@ -151,10 +151,10 @@ void reset_vector(){
     power_position [0] = 60; //power line + power initial
     power_position [1] = 150; //power initial
 
-    dart_position [0] = 40;
-    dart_position [1] = 150;
+    dart_position [0] = 80;
+    dart_position [1] = 120;
 
-} 
+}
 
 void plot_pixel(int x, int y, short int line_color){
     *(short int *)(pixel_buffer_start + (y << 10) + (x << 1)) = line_color;
@@ -180,7 +180,7 @@ void draw_line(int x0, int y0, int x1, int y1, short int color) {
         swap(&x0, &y0);
         swap(&x1, &y1);
     }
-  
+ 
     if (x0>x1) {
         swap(&x0, &x1);
         swap(&y0, &y1);
@@ -318,23 +318,25 @@ void pushbutton_ISR(void) {
     int press, HEX_bits;
     press = *(KEY_ptr + 3); // read the pushbutton interrupt register
     *(KEY_ptr + 3) = press; // Clear the interrupt
-    if (press & 0x1) { //key0
+    if (press & 0x1 && step == 0) { //key0
         HEX_bits = 0b00111111;
-        step = 1; 
+        step = 1;
     }
-    else if (press & 0x2) { //key1
+    else if (press & 0x2 && step == 1) { //key1
         HEX_bits = 0b00000110;
         plot_arc(1.5);
         step = 2 ;
     }
-    else { //key 2 or 3
+    else if (press & 0x8) { //key 2 or 3
         HEX_bits = 0b1111111;
         if (step == -1) {
-            step = 0; //to begin game
-            reset_vector();
+            step = 0; //to begin game 
         }
         else step = -1; //to reset
+        reset_vector();
     }
+    
+    else HEX_bits = 0b1111111;
 
     *HEX3_HEX0_ptr = HEX_bits;
     return;
@@ -356,6 +358,7 @@ void plot_arc(double velocity){
 }
 
 
+    
 
 
 
@@ -365,4 +368,3 @@ void plot_arc(double velocity){
 
 
 
-	
