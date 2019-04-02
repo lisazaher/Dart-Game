@@ -89,14 +89,18 @@ int main(void)
         //check if any should be updated
         if (direction_position[0] == 5 || direction_position[0] == 105) position_incx = -position_incx;
         if (power_position[1] == 150 || power_position[1] == 100) power_incy = -power_incy;
-        if (dart_position[1] == 0 || dart_position[1] == 100) dart_incy = -dart_incy;
-        if (dart_position[0] == 20 || dart_position[0] == 309) dart_incx = -dart_incx;
+        //if (dart_position[1] == 0 || dart_position[1] == 100) dart_incy = -dart_incy;
+        //if (dart_position[0] == 20 || dart_position[0] == 309) dart_incx = -dart_incx;
         
         if (step == 0) direction_position[0] += position_incx; //changing direction
-        else if (step == 1) power_position[1] += power_incy; //changing power
+        else if (step == 1) {
+            power_position[1] += power_incy;
+            dart_incx = 0;
+            dart_incy = 0; 
+        }//changing power
         else if (step == 2) { //sending projectile
-            dart_position[0] += dart_incx;
-            dart_position[1] +=dart_incy;
+            dart_position[0] = dart_incx + 80;
+            dart_position[1] = dart_xy[dart_incx] - 120;
         }
         
         pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
@@ -315,6 +319,7 @@ void pushbutton_ISR(void) {
     }
     else if (press & 0x2) { //key1
         HEX_bits = 0b00000110;
+        plot_arc(1.5);
         step = 2 ;
     }
     else { //key 2 or 3
@@ -339,7 +344,7 @@ void plot_arc(double velocity){
         calcX = (2.44/160)*x;
         calcY = calcX - (((calcX)*(calcX))/(velocity * velocity));
         y = calcY / transNum;
-        dart_xy[x] = 120 - y;
+        dart_xy[x] = y;
         plot_pixel (x + 80, 120 - y, 0xFFFF);
     }
 
