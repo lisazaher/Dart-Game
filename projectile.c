@@ -6,6 +6,7 @@ volatile int pixel_buffer_start;
 int direction_position [2] = {0,0};
 int power_position[2] = {0,0};
 int dart_position[2] = {0,0};
+int dart_xy [160];
 //step tells you what part in the game are you (finding power, direction or shooting)
 int step = -1;
 /*
@@ -338,6 +339,7 @@ void plot_arc(double velocity){
         calcX = (2.44/160)*x;
         calcY = calcX - (((calcX)*(calcX))/(velocity * velocity));
         y = calcY / transNum;
+        dart_xy[x] = 120 - y;
         plot_pixel (x + 80, 120 - y, 0xFFFF);
     }
 
