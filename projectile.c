@@ -20,6 +20,7 @@ int step = -1;
 void clear_screen();
 void draw_line(int x0, int y0, int x1, int y1, short int color);
 void plot_pixel(int x, int y, short int line_color);
+void plot_arc(double velocity);
 void wait();
 void swap(int * x, int * y);
 void delay();
@@ -71,6 +72,7 @@ int main(void)
     {
         /* Erase any boxes and lines that were drawn in the last iteration */
         clear_screen();
+        plot_arc(1.5);
         if (step<=1) {
             draw_line(direction_initial[0], direction_initial[1], direction_position[0], direction_position[1], colourlist[0]);
             draw_line(power_initial[0], power_position [1], power_position[0], power_position[1], colourlist[1]);
@@ -328,6 +330,19 @@ void pushbutton_ISR(void) {
     return;
 }
 
+void plot_arc(double velocity){
+    int x, y;
+    double calcY, calcX;
+    double transNum = 0.03483;
+    
+    for (x = 0; x < 160; x++){
+        calcX = (2.44/160)*x;
+        calcY = calcX - (((calcX)*(calcX))/(velocity * velocity));
+        y = calcY / transNum;
+        plot_pixel (x + 80, 120 - y, 0xFFFF);
+    }
+
+}
 
 
 
@@ -337,3 +352,6 @@ void pushbutton_ISR(void) {
 
 
 
+
+
+	
