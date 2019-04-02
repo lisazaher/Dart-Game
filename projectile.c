@@ -72,7 +72,6 @@ int main(void)
     {
         /* Erase any boxes and lines that were drawn in the last iteration */
         clear_screen();
-        plot_arc(1.5);
         if (step<=1) {
             draw_line(direction_initial[0], direction_initial[1], direction_position[0], direction_position[1], colourlist[0]);
             draw_line(power_initial[0], power_position [1], power_position[0], power_position[1], colourlist[1]);
