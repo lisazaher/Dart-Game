@@ -49,11 +49,11 @@ int main(void)
 
     //direction data
     const int direction_initial [2] = {210, 220}; //the point of rotation of line
-    int position_incx =1;
+    int position_incx =-1;
 
     //power data
     const int power_initial[2] = {30,150};
-    int power_incy = 1;
+    int power_incy =1;
 
     //dart data
     int dart_incx = 1;
@@ -73,24 +73,27 @@ int main(void)
     {
         /* Erase any boxes and lines that were drawn in the last iteration */
         clear_screen();
+        
         if (step<=1) {
+            //plot_arc(1.5);
             draw_line(direction_initial[0], direction_initial[1], direction_position[0], direction_position[1], colourlist[0]);
             draw_line(power_initial[0], power_position [1], power_position[0], power_position[1], colourlist[1]);
         }
-        if (step>1) draw_line(dart_position[0], dart_position[1], dart_position[0] + 10, dart_position[1], colourlist[2]);
+        if (step==2) {
+            draw_line(dart_position[0], dart_position[1], dart_position[0] + 10, dart_position[1], colourlist[2]);
+            if (dart_position[0] == 309 || dart_position[0] == 0 || dart_position[1] == 0 || dart_position[1] == 209) step = 3;
+        }
+
+        if (step == 3) {
+            plot_arc(1.5);
+        }
         //delay
         wait();
         //delay();
 
-        //erase
-        //draw_line(direction_initial[0], direction_initial[1], direction_position[0], direction_position[1], 0x0000);
-        //draw_line(power_initial[0], power_position [1], power_position[0], power_position[1], 0x0000);
-
         //check if any should be updated
-        if (direction_position[0] == 5 || direction_position[0] == 105) position_incx = -position_incx;
+        if (direction_position[0] == 150 || direction_position[0] == 270) position_incx = -position_incx;
         if (power_position[1] == 150 || power_position[1] == 100) power_incy = -power_incy;
-        //if (dart_position[1] == 0 || dart_position[1] == 100) dart_incy = -dart_incy;
-        //if (dart_position[0] == 20 || dart_position[0] == 309) dart_incx = -dart_incx;
         
         if (step == 0) direction_position[0] += position_incx; //changing direction
         else if (step == 1) {
@@ -106,6 +109,8 @@ int main(void)
         pixel_buffer_start = *(pixel_ctrl_ptr + 1); // new back buffer
         
     }
+
+
 }
 
 
