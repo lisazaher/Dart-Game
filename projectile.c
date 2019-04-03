@@ -6,6 +6,7 @@ volatile int pixel_buffer_start;
 int direction_position [2] = {0,0};
 int power_position[2] = {0,0};
 int dart_position[2] = {0,0};
+float power;
 int dart_xy [160];
 //step tells you what part in the game are you (finding power, direction or shooting)
 int step = -1;
@@ -15,6 +16,10 @@ int step = -1;
 1 = direction has been chosen
 2 = power has been chosen and projecticle starts
 3 = dart has reached the dart board aka end of game
+*/
+
+/*
+    Power will have to range from 1.307 -> 2.066 with a line representing the board going from (y) = 90 -> 150
 */
 
 //function prototypes to draw on VGA
@@ -73,18 +78,17 @@ int main(void)
         clear_screen();
         
         if (step<=1) {
-            //plot_arc(1.5);
             draw_line(direction_initial[0], direction_initial[1], direction_position[0], direction_position[1], colourlist[0]);
             draw_line(power_initial[0], power_position [1], power_position[0], power_position[1], colourlist[1]);
         }
         if (step==2) {
             draw_line(dart_position[0], dart_position[1], dart_position[0] + 10, dart_position[1], colourlist[2]);
-            //plot_arc(1.5);
+            plot_arc(power);
             if (dart_position[0] == 229 || dart_position[0] == 0 || dart_position[1] == 0 || dart_position[1] == 209) step = 3;
         }
 
         if (step == 3) {
-            plot_arc(1.5);
+            plot_arc(power);
             reset_vector();
         }
         //delay
@@ -324,7 +328,8 @@ void pushbutton_ISR(void) {
     }
     else if (press & 0x2 && step == 1) { //key1
         HEX_bits = 0b00000110;
-        plot_arc(1.5);
+        power = ((151-power_position[1]) * 0.0152) + 1.307;
+        plot_arc(power);
         step = 2 ;
     }
     else if (press & 0x8) { //key 2 or 3
